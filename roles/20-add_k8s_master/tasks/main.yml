@@ -3,7 +3,6 @@
 - name: Get certificate key
   shell: kubeadm init phase upload-certs --upload-certs|grep -v 'upload-certs'
   register: k8s_certificate_key
-  tags: master_keys
   run_once: true
   become: true
   delegate_to: "{{ net_address_master01 }}"
