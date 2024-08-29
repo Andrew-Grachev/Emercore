@@ -4,17 +4,16 @@
 - Небходимо создать ВМ со следующими характеристиками: 4 CPU, 12 GB RAM, диск1 50GB, диск2 > 200GB, OS Альт Серевр 10
 
 Деплой: 
-- вписать в inventory  адрес виртуальной машины
+Вписать в inventory.yaml адреса виртуальных машин
 
-
-отредактировать следующие переменные в group_vars/all.yaml:
-- net_dns_server_forward здесь указать вышестоящий ДНС сервер
-- net_local_domain здесь указать домен для ЭК
-- net_address_master01 здесь адрес сервера/ВМ
-- kubernetes_pod_subnet здесь указать подсеть выделенную для подов
-- kubernetes_service_subnet здесь указать подсеть выделенную для сервисов
-- kubernetes_coredns_svc здесь указать адрес внутреннего днс куба, обычно это .10 сети сервисов
-- storage_size_prometheus, nfs_provisioner_disk_size указать разиеры хранилищ
+Отредактировать переменные в group_vars/all.yaml:
+net_dns_server_forward: вышестоящий ДНС сервер
+net_local_domain: домен для ЭК
+net_address_master01: адрес сервера/ВМ
+kubernetes_pod_subnet: подсеть выделенная для подов
+kubernetes_service_subnet: подсеть выделенная для сервисов
+kubernetes_coredns_svc: адрес внутреннего днс куба (первые 3 октета из подсети сервисов, последний - 10)
+storage_size_prometheus, nfs_provisioner_disk_size: размеры хранилищ
 - lvm_provisioner_device_pattern указать диск, на котором будет развёрнуто блочное хранилище
 - local_admin указать учётную запись администратор с правами sudo
 

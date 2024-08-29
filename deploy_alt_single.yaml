@@ -6,14 +6,11 @@
     - 01-conf_sysctl
     - 02-install_kubernetes
     - 03-add_k8s_cluster
-    - role: add_k8s_network
-    - role: untain_master
-      when: single_node|bool
-    - role: install_k8s_nodelocaldns
-    - role: install_k8s_provisioners_lvm
-      when: lvm_provisioner_namespace == "csi-lvm-system"
-    - role: install_k8s_provisioners_lvm_sanlock
-      when: lvm_provisioner_namespace == "csi-lvm-system-sanlock"
+    - 04-add_k8s_network
+    - 05-untain_master
+    - 06-install_k8s_nodelocaldns
+    - 07-install_k8s_provisioners_lvm
+    - 08-install_k8s_provisioners_lvm_sanlock
     - 09-install_k8s_provisioners_nfs
     - 10-install_helm
     - 11-staff_operator_postgres
