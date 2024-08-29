@@ -1,5 +1,8 @@
-### Система
+# Системный администратор
 local_admin: admin1
+password_local_admin: P@ssw0rd
+
+
 # если есть выделенные воркеры, то включаем
 worker_nodes: false
 # включить для создания бонда для iscsi

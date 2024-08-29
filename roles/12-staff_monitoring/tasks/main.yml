@@ -1,7 +1,6 @@
 ---
-# tasks file for staff_monitoring
-- name: Create namespace for monitoring
-  tags: [staff, monitoring]
+
+- name: Создание пространства имен для 'monitoring'
   kubernetes.core.k8s:
     kubeconfig: "~/.kube/config"
     definition:
@@ -13,13 +12,12 @@
           pod-security.kubernetes.io/enforce: privileged
     state: present
 
-- name: Add helm repo prometheus
+- name: Добавление репозитория 'prometheus-community' для helm
   kubernetes.core.helm_repository:
     name: prometheus-community
     repo_url: "https://prometheus-community.github.io/helm-charts"
 
-
-- name: Deploy prometheus monitoring
+- name: Развертывание 'prometheus (43.2.1)'
   kubernetes.core.helm:
     name: prometheus
     release_namespace: monitoring
@@ -27,8 +25,11 @@
     chart_version: 43.2.1
     values: "{{ lookup('file', 'chart_kube-prometheus-stack_values.yaml') | from_yaml }}"
 
+- name: Ожидаем запуска контейнера 'prometheus'
+  ansible.builtin.pause:
+    minutes: 1
 
-- name: Install dashboards for grafana
+- name: Установка панелей инструментов для Grafana
   kubernetes.core.k8s:
     state: present
     namespace: monitoring
@@ -46,3 +47,4 @@
       - "{{ lookup('file', 'PrometheusRule_rabbitmq-cluster-operator.yaml') | from_yaml }}"
       - "{{ lookup('file', 'rabbitmq-servicemonitor.yaml') | from_yaml }}"
 
+...

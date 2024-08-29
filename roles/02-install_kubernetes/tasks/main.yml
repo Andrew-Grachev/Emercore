@@ -1,6 +1,6 @@
 ---
-# install kubernetes
-- name: Install dependencies
+
+- name: Установка пакетов AltLinux
   apt_rpm:
     update_cache: true
     package:
@@ -13,12 +13,10 @@
       - wget
       - python3-module-kubernetes-client
       - bind-utils 
-
   become: "{{ 'no' if ansible_user == 'root' else 'yes' }}"
   become_method: sudo
 
-
-- name: Install kubernetes
+- name: Установка Kubernetes v1.28
   apt_rpm:
     update_cache: true
     state: present
@@ -31,8 +29,7 @@
   become: "{{ 'no' if ansible_user == 'root' else 'yes' }}"
   become_method: sudo
 
-
-- name: enable crio
+- name: Запуск службы 'crio'
   service: 
     name: crio
     state: started
@@ -41,8 +38,7 @@
   become: "{{ 'no' if ansible_user == 'root' else 'yes' }}"
   become_method: sudo
 
-
-- name: enable kubelet
+- name: Запуск службы 'kubelet'
   service: 
     name: kubelet
     state: started
@@ -51,32 +47,24 @@
   become: "{{ 'no' if ansible_user == 'root' else 'yes' }}"
   become_method: sudo
 
-- name: check config kubeled daemon
+- name: Настройка имени домена в конфигурации 'kubeled'
   shell: sed -i "s/--cluster-domain=cluster.local/--cluster-domain={{ net_local_domain }}/" /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
   become: "{{ 'no' if ansible_user == 'root' else 'yes' }}"
   become_method: sudo
-  ignore_errors: yes
+#  ignore_errors: yes
 
-- name: check config kubeled daemon
+- name: Настройка типа авторизации в конфигурации 'kubeled'
   shell: sed -i "s/KUBELET_AUTHZ_ARGS=--authorization-mode=Webhook/KUBELET_AUTHZ_ARGS=--authentication-token-webhook=true --authorization-mode=Webhook/" /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
   become: "{{ 'no' if ansible_user == 'root' else 'yes' }}"
   become_method: sudo
-  ignore_errors: yes
+#  ignore_errors: yes
 
-#- name: reload systemd kubelet
-#  service: 
-#    name: kubelet
-#    state: reloaded
-#    enabled: yes
-#  tags: kubelet
-#  become: "{{ 'no' if ansible_user == 'root' else 'yes' }}"
-#  become_method: sudo
-
-- name: restart systemd kubelet
+- name: Перезапуск службы 'kubelet'
   service: 
     name: kubelet
     state: restarted
     enabled: yes
-  tags: kubelet
   become: "{{ 'no' if ansible_user == 'root' else 'yes' }}"
   become_method: sudo
+
+...

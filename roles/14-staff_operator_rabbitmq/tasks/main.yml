@@ -1,13 +1,12 @@
 ---
-# tasks file for staff_rabbitmq
 
-- name: Add helm repo rabbitmq
+- name: Добавление репозитория 'bitnami' для helm
   kubernetes.core.helm_repository:
     name: bitnami
     repo_url: "https://charts.bitnami.com/bitnami"
 
 
-- name: Deploy rabbitmq-operator
+- name: Развертывание 'rabbitmq-operator (3.2.8)'
   kubernetes.core.helm:
     name: rabbitmq-operator
     release_namespace: staff
@@ -15,4 +14,4 @@
     chart_version: 3.2.8
     values: "{{ lookup('file', 'chart_bitnami_rabbitmq-cluster-operator_3.2.8_values.yaml') | from_yaml }}"
 
-
+...

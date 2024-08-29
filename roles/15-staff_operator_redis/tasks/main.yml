@@ -1,13 +1,13 @@
 ---
-# tasks file for staff_rabbitmq
 
-- name: Add helm repo redis
+- name: Добавление репозитория 'redis-operator' для helm
+
   kubernetes.core.helm_repository:
     name: redis-operator
     repo_url: "https://spotahome.github.io/redis-operator"
 
 
-- name: Deploy rabbitmq-operator
+- name: Развертывание 'rabbitmq-operator (3.2.7)'
   kubernetes.core.helm:
     name: redis-operator
     release_namespace: staff
@@ -15,4 +15,4 @@
     chart_version: 3.2.7 
     values: "{{ lookup('file', 'chart_redis-operator_3.2.7_values.yaml') | from_yaml }}"
 
-
+...
