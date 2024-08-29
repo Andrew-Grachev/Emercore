@@ -1,7 +1,12 @@
 masters:
   hosts:
     master01:
-      ansible_host: localhost
+      ansible_host: 10.1.11.200
+    master02:
+      ansible_host: 10.l.11.201
+    master03:
+      ansible_host: 10.1.11.202
+
 kube:
   children:
     masters:

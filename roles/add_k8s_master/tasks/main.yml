@@ -1,5 +1,5 @@
 ---
-# tasks file for add_k8s_master
+
 - name: Get certificate key
   shell: kubeadm init phase upload-certs --upload-certs|grep -v 'upload-certs'
   register: k8s_certificate_key
@@ -57,3 +57,5 @@
   with_items:
      - '{{ net_address_master02 }}'
      - '{{ net_address_master03 }}'
+
+...
