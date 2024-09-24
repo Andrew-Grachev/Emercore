@@ -1,0 +1,36 @@
+---
+
+- name: Проверка наличия файла '/home/{{ ansible_ssh_user }}/.kube/config'
+  stat:
+    path: /home/{{ ansible_ssh_user }}/.kube/config
+  register: result
+  ignore_errors: yes
+
+- name: Создание кластера K8s
+  block:
+
+  - name: Создаем конфигурацию кластера
+    template:
+      src: cluster_config.yaml
+      dest: '/tmp/cluster_config.yaml'
+
+  - name: Инициализируем кластер
+    shell: kubeadm init --upload-certs --config /tmp/cluster_config.yaml >> /tmp/cluster_initialized.txt
+    register: init_cluster
+    ignore_errors: yes
+
+  - name: Создаем директорию '/home/{{ ansible_ssh_user }}/.kube'
+    file:
+      path: '/home/{{ ansible_ssh_user }}/.kube'
+      state: directory
+      mode: 0755
+
+  - name: Копируем конфигурацию кластера в домашний каталог администратора
+    copy:
+      src: '/etc/kubernetes/admin.conf'
+      dest: '/home/{{ ansible_ssh_user }}/.kube/config'
+      remote_src: yes
+
+  when: not result.stat.exists
+
+...

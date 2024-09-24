@@ -1,0 +1,145 @@
+---
+
+- name: Установка и настройка CephFS
+  block:
+
+  - name: Проверка наличия установленного CephFS сервер
+    stat:
+      path: /etc/sudoers.d/{{ ceph.user }}
+    register: cephfs_result
+    ignore_errors: yes
+
+  - name: Настройка CephFS серверов
+    block:
+
+    - name: Создание пользователя '{{ ceph.user }}'
+      user:
+        name: '{{ ceph.user }}'
+        state: present
+        password: "{{ ceph.password | password_hash('sha512') }}"
+        comment: 'Администратор CephFS'
+        shell: /bin/bash
+        home: '/home/{{ ceph.user }}'
+        generate_ssh_key: yes
+        ssh_key_bits: 2048
+        ssh_key_file: .ssh/id_rsa
+        
+    - name: Создание прав sudo пользователю '{{ ceph.user }}'
+      shell: |
+        echo "{{ ceph.user }} ALL= (ALL:ALL) NOPASSWD: ALL" > /etc/sudoers.d/{{ ceph.user }}
+        chmod 0400 /etc/sudoers.d/{{ ceph.user }}
+        usermod -a -G wheel {{ ceph.user }}
+
+    - name: Внесение изменений в конфигурационныйе файл '/etc/openssh/ssh_config'
+      lineinfile:
+        dest: /etc/openssh/ssh_config
+        regexp: 'StrictHostKeyChecking'
+        line: '  StrictHostKeyChecking  no'
+
+    - name: Перезагрузка CephFS серверов
+      reboot:
+        msg: 'Reboot'
+
+    - name: Инсталляция необходимых пакетов
+      apt_rpm:
+        name:
+        - sshpass
+        - ceph-deploy
+        - python3
+        update_cache: yes
+
+    - name: Копирование ключей на CephFS сервера
+      shell: |
+        {% for item in cephfs.srv %}
+        sshpass -p '{{ ceph.password }}' ssh-copy-id -i /home/{{ ceph.user }}/.ssh/id_rsa.pub -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null {{ ceph.user }}@{{ hostvars[item].ansible_ssh_host }}
+        {% endfor %}
+      ignore_errors: yes
+
+    when: not cephfs_result.stat.exists
+
+  # - name: Установка базовых компонентов Ceph на узлах кластера
+    # shell: |
+      # sshpass -p '{{ ceph.password }}' ssh {{ ceph.user }}@127.0.0.1 ceph-deploy --username {{ ceph.user }} install --mon --osd {{ cephfs.srv | join(' ') }}
+    # when: inventory_hostname == cephfs.srv[0]
+
+  # - name: Перезагрузка CephFS серверов
+    # reboot:
+      # msg: 'Reboot'
+
+  # - name: Установка компонентов 'Mgr' сервис мониторинга узлах кластера
+    # shell: |
+      # sshpass -p '{{ ceph.password }}' ssh {{ ceph.user }}@127.0.0.1 ceph-deploy --username {{ ceph.user }} install --mgr {{ cephfs.srv | join(' ') }}
+    # when: inventory_hostname == cephfs.srv[0]
+
+  # - name: Создаем новый кластер Ceph
+    # shell: |
+      # sshpass -p '{{ ceph.password }}' ssh {{ ceph.user }}@127.0.0.1 ceph-deploy --username {{ ceph.user }} new {{ cephfs.srv | join(' ') }}
+    # when: inventory_hostname == cephfs.srv[0]
+
+  # - name: Инициализировать мониторы на ранее указанных узлах кластера
+    # shell: |
+      # sshpass -p '{{ ceph.password }}' ssh {{ ceph.user }}@127.0.0.1 ceph-deploy --username {{ ceph.user }} mon create-initial
+    # when: inventory_hostname == cephfs.srv[0]
+
+  # - name: Зарегистрировать службу диспетчера Ceph на узлах кластера
+    # shell: |
+      # sshpass -p '{{ ceph.password }}' ssh {{ ceph.user }}@127.0.0.1 ceph-deploy --username {{ ceph.user }} mgr create {{ cephfs.srv | join(' ') }}
+    # when: inventory_hostname == cephfs.srv[0]
+
+  # - name: Создать OSD на дисках /dev/vdb узлов кластера и добавить их в кластер
+    # shell: |
+      # sshpass -p '{{ ceph.password }}' ssh {{ ceph.user }}@127.0.0.1 ceph-deploy --username {{ ceph.user }} osd create --data {{ cephfs.dev }} {{ item }}
+    # with_items: '{{ cephfs.srv }}'
+    # when: inventory_hostname == cephfs.srv[0]
+
+  # - name: Установить клиентские инструментальные средства Ceph на фронтальную машину
+    # shell: |
+      # sshpass -p '{{ ceph.password }}' ssh {{ ceph.user }}@127.0.0.1 ceph-deploy --username {{ ceph.user }} install --cli {{ cephfs.srv[0] }}
+    # when: inventory_hostname == cephfs.srv[0]
+
+  # - name: Указать, что в качестве  административной рабочей станции будет выступать фронтальная машина
+    # shell: |
+      # sshpass -p '{{ ceph.password }}' ssh {{ ceph.user }}@127.0.0.1 ceph-deploy admin {{ cephfs.srv[0] }}
+    # when: inventory_hostname == cephfs.srv[0]
+
+  # - name: Install Metadata Server Daemon - сервер метаданных
+    # shell: |
+      # sshpass -p '{{ ceph.password }}' ssh {{ ceph.user }}@127.0.0.1 ceph-deploy --username {{ ceph.user }} install --mds {{ cephfs.srv | join(' ') }}
+      # cp ceph.client.admin.keyring /etc/ceph/
+      # chown root:root /etc/ceph/ -R
+      # chmod 0644 /etc/ceph/ -R
+      # sshpass -p '{{ ceph.password }}' ssh {{ ceph.user }}@127.0.0.1 ceph-deploy --username {{ ceph.user }} mds create {{ cephfs.srv | join(' ') }}
+    # when: inventory_hostname == cephfs.srv[0]
+
+  # - name: insecure allow
+    # shell: |
+      # sshpass -p '{{ ceph.password }}' ssh {{ ceph.user }}@127.0.0.1 sudo ceph config set mon auth_allow_insecure_global_id_reclaim false
+      # sshpass -p '{{ ceph.password }}' ssh {{ ceph.user }}@127.0.0.1 sudo ceph config set mon mon_warn_on_insecure_global_id_reclaim false
+      # sshpass -p '{{ ceph.password }}' ssh {{ ceph.user }}@127.0.0.1 sudo ceph config set mon mon_warn_on_insecure_global_id_reclaim_allowed false
+    # when: inventory_hostname == cephfs.srv[0]
+
+  # - name: create polls
+    # shell: |
+      # sshpass -p '{{ ceph.password }}' ssh {{ ceph.user }}@127.0.0.1 sudo ceph osd pool create kubernetes 32
+      # sshpass -p '{{ ceph.password }}' ssh {{ ceph.user }}@127.0.0.1 sudo ceph osd pool create k8sfs_data 32
+      # sshpass -p '{{ ceph.password }}' ssh {{ ceph.user }}@127.0.0.1 sudo ceph osd pool create k8sfs_metadata 32
+      # sshpass -p '{{ ceph.password }}' ssh {{ ceph.user }}@127.0.0.1 sudo ceph osd pool application enable k8sfs_metadata cephfs
+      # sshpass -p '{{ ceph.password }}' ssh {{ ceph.user }}@127.0.0.1 sudo ceph osd pool application enable kubernetes cephfs
+    # when: inventory_hostname == cephfs.srv[0]
+
+  # - name: Создать файловую систему cephfs
+    # shell: |
+      # sshpass -p '{{ ceph.password }}' ssh {{ ceph.user }}@127.0.0.1 sudo ceph fs new cephfs k8sfs_metadata k8sfs_data
+    # when: inventory_hostname == cephfs.srv[0]
+
+  when: inventory_hostname in cephfs.srv
+
+...
+# ceph -s
+ 
+# cat ceph.client.admin.keyring | grep key > admin.secret
+# sudo mkdir /mnt/cephfs
+# sudo mount -t ceph 192.168.1.207:6789:/ /mnt/cephfs -o name=admin,secretfile=admin.secret
+
+
+# sudo mount -t ceph 10.0.0.171,10.0.0.172,10.0.0.173:/ /mnt -o name=data1,secret='AQDh335g/MDeKBAAOxnXO/H4W7g2snPOpq+lCA=='

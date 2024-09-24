@@ -1,0 +1,17 @@
+---
+
+- name: Чтение статуса плагина
+  shell: kubectl get pods -n kube-system | grep 'calico'
+  register: status_calico
+  become: false
+  ignore_errors: yes
+
+- name: Устанавливаем сетевой плагин 'Calico with BGP'
+  kubernetes.core.k8s:
+    state: present
+    force: no
+    kubeconfig: '/home/{{ ansible_ssh_user }}/.kube/config'
+    definition: "{{ lookup('template', 'kube-calico-bgp.yaml') }}"
+  when: status_calico.stdout == ''
+
+...

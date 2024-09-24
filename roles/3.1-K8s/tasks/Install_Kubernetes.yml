@@ -1,0 +1,73 @@
+---
+
+- name: Проверка наличия файла '/etc/kubernetes/config'
+  stat:
+    path: /etc/kubernetes/config
+  register: kubernetes_result
+  ignore_errors: yes
+
+- name: Установка 'kubernetes'
+  block:
+
+  - name: Установка пакетов AltLinux
+    apt_rpm:
+      update_cache: true
+      package:
+        - python3-module-pip
+        - python3-module-kubernetes-client
+        - bind-utils
+        - curl
+        - htop
+        - iftop
+        - git
+        - wget
+
+  - name: Установка модулей с помощью 'pip3'
+    pip:
+      executable: pip3
+      extra_args: --upgrade
+      name:
+        - ansible
+        - ansible-core
+        - ansible-lint
+        - kubernetes
+        - collection
+        - jinja2
+        - dnspython
+        - requests
+        - openshift
+        - docker
+
+  - name: Установка Kubernetes v1.28
+    apt_rpm:
+      update_cache: true
+      state: present
+      package:
+        - kubernetes1.28-kubeadm
+        - kubernetes1.28-kubelet
+        - kubernetes1.28-crio
+        - cri-tools1.28
+
+  - name: Запуск службы 'crio'
+    service: 
+      name: crio
+      state: started
+      enabled: yes
+
+  - name: Настройка имени домена в конфигурации 'kubelet'
+    shell: sed -i "s/--cluster-domain=cluster.local/--cluster-domain={{ domain }}/" /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
+
+  - name: Настройка типа авторизации в конфигурации 'kubelet'
+    shell: sed -i "s/KUBELET_AUTHZ_ARGS=--authorization-mode=Webhook/KUBELET_AUTHZ_ARGS=--authentication-token-webhook=true --authorization-mode=Webhook/" /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
+
+  - name: Перезапуск службы 'kubelet'
+    service: 
+      name: kubelet
+      state: restarted
+      enabled: yes
+
+  - import_tasks: Install_Helm.yml
+
+  when: not kubernetes_result.stat.exists
+
+...

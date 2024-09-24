@@ -1,0 +1,41 @@
+---
+
+- name: Чтение статуса 'Postgres'
+  shell: kubectl get pods -n staff | grep 'postgres'
+  register: status_postgres
+  become: false
+  ignore_errors: yes
+
+- name:
+  block:
+  
+  - name: Создание пространства имен для staff
+    k8s:
+      kubeconfig: '/home/{{ ansible_ssh_user }}/.kube/config'
+      definition:
+        apiVersion: v1
+        kind: Namespace
+        metadata:
+          name: staff
+          labels:
+            pod-security.kubernetes.io/enforce: privileged
+      state: present
+
+  - name: Add repo 'postgres operator'
+    kubernetes.core.helm_repository:
+      name: postgres-operator-charts
+      repo_url: https://opensource.zalando.com/postgres-operator/charts/postgres-operator
+    become: false
+
+  - name: Deploy 'postgres operator'
+    kubernetes.core.helm:
+      name: postgres-operator
+      release_namespace: staff
+      chart_ref: postgres-operator-charts/postgres-operator
+      chart_version: 1.9.0
+      values: "{{ lookup('template', 'chart_postgres_operator_1_9_0_values.yaml') | from_yaml }}"
+    become: false
+
+  when: status_postgres.stdout == ''
+    
+...

@@ -1,0 +1,61 @@
+---
+
+- name: Чтение статуса 'LVM'
+  shell: kubectl get pods -n csi-nfs | grep 'nfs'
+  register: status_nfs
+  become: false
+  ignore_errors: yes
+
+- name:
+  block:
+
+  - name: Создание пространства имен для 'NFS provisioner'
+    k8s:
+      kubeconfig: '/home/{{ ansible_ssh_user }}/.kube/config'
+      definition:
+        apiVersion: v1
+        kind: Namespace
+        metadata:
+          name: '{{ k8s.nfs_provisioner.namespace }}'
+          labels:
+            pod-security.kubernetes.io/enforce: privileged
+      state: present
+
+  - name: Создание NFS provisioner PVC
+    k8s:
+      state: present
+      force: no
+      kubeconfig: '/home/{{ ansible_ssh_user }}/.kube/config'
+      definition: "{{ lookup('template', 'nfs_pvc.yaml') }}"
+
+#- name: Create NFS provisioner PSP
+#  k8s:
+#    state: present
+#    force: no
+#    kubeconfig: '/home/{{ ansible_ssh_user }}/.kube/config'
+#    definition: "{{ lookup('template', 'nfs_psp.yaml') }}"
+
+  - name: Создание NFS provisioner RBAC
+    k8s:
+      state: present
+      force: no
+      kubeconfig: '/home/{{ ansible_ssh_user }}/.kube/config'
+      definition: "{{ lookup('template', 'nfs_rbac.yaml') }}"
+
+  - name: Создание NFS provisioner deployment
+    k8s:
+      state: present
+      force: no
+      kubeconfig: '/home/{{ ansible_ssh_user }}/.kube/config'
+      definition: "{{ lookup('template', 'nfs_deployment.yaml') }}"
+
+  - name: Создание NFS provisioner StorageClass
+    k8s:
+      state: present
+      force: no
+      kubeconfig: '/home/{{ ansible_ssh_user }}/.kube/config'
+      definition: "{{ lookup('template', 'nfs_storageclass.yaml') }}"
+
+  when: status_nfs.stdout == ''
+
+...

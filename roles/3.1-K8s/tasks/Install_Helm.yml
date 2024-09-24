@@ -1,0 +1,8 @@
+---
+
+- name: Инсталляция 'helm'
+  apt_rpm:
+    update_cache: true
+    pkg: helm
+
+...

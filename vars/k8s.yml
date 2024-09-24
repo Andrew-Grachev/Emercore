@@ -1,0 +1,79 @@
+---
+
+domain: 'kube.local'
+
+repo:
+  srv: srv-ipa-1
+  port: 8080
+
+net:
+  network: 192.168.1.0
+  netmask: 255.255.255.0
+  prefix: 24
+  gateway: 192.1681.1
+  bind: 192.168.1.1
+  vlan:
+
+ntp:
+  timezone: Europe/Moscow
+  srv: srv-ipa-1
+  ntp_out: 192.168.1.1
+
+pxe:
+  srv: srv-ipa-1
+  port: 8085
+  dhcp:
+  - 140
+  - 250
+
+freeipa:
+  srv: srv-ipa-1
+
+
+
+
+
+
+
+
+
+k8s:
+  keepalived_IP:  192.168.1.230
+  pod_subnet:     10.10.10.0/22
+  service_subnet: 10.10.12.0/24
+  core_dns:       10.10.12.10
+  masters:
+  - srv-master-1
+  - srv-master-2
+  - srv-master-3
+  workers:
+  - srv-worker-1
+  - srv-worker-2
+  - srv-worker-3
+  lvm_provisioner:
+    namespace: csi-lvm-system
+    device: /dev/sdb
+    #disk: /dev/disk/by-id/scsi-33000000100000001
+    #vg_name: vg01
+  nfs_provisioner:
+    namespace: csi-nfs
+    disk_size: 50Gi
+    #portal_ip: "10.150.0.200:3260"
+    #iqn_target: iqn.2023-09.com.hac:alt.target01
+    #iqn_lun: 2
+  rwo_sc: csi-lvm
+  rwx_sc: csi-nfs
+
+
+
+cephfs:
+  srv:
+  - srv-ceph-1
+  - srv-ceph-2
+  - srv-ceph-3
+  dev: /dev/sdb
+  # store: /mnt/backup
+
+
+
+...

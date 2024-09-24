@@ -1,0 +1,29 @@
+---
+
+- name: Чтение статуса 'Redis'
+  shell: kubectl get pods -n staff | grep 'redis'
+  register: status_redis
+  become: false
+  ignore_errors: yes
+
+- name:
+  block:
+
+  - name: Добавление репозитория 'redis-operator' для Helm
+    kubernetes.core.helm_repository:
+      name: redis-operator
+      repo_url: "https://spotahome.github.io/redis-operator"
+    become: false
+
+  - name: Развертывание 'redis-operator (3.2.7)'
+    kubernetes.core.helm:
+      name: redis-operator
+      release_namespace: staff
+      chart_ref: redis-operator/redis-operator
+      chart_version: 3.2.7 
+      values: "{{ lookup('template', 'chart_redis-operator_3.2.7_values.yaml') | from_yaml }}"
+    become: false
+
+  when: status_redis.stdout == ''
+
+...
